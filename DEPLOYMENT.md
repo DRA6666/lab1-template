@@ -54,9 +54,15 @@ creadas en tu equipo. La tabla se crea automáticamente al iniciar la API.
 
 ## Comprobación del despliegue
 
-En GitHub, Settings > Secrets and variables > Actions > Variables, añade
-`RAILWAY_BASE_URL` con la URL pública HTTPS, sin `/docs` ni `/api/v1/persons`.
-Ejecuta manualmente `Railway API tests` desde Actions. La colección crea una
+La API está desplegada en https://lab1-template-production-893a.up.railway.app.
+Su documentación está en https://lab1-template-production-893a.up.railway.app/docs.
+El entorno Postman `postman/[inst][railway] Lab1.postman_environment.json`
+contiene este dominio. Se verificaron las cinco operaciones con Newman.
+
+Ejecuta manualmente `Railway API tests` desde Actions; usa ese dominio por defecto.
+Si cambia, puedes configurar `RAILWAY_BASE_URL` en GitHub, Settings > Secrets and
+variables > Actions > Variables, con la nueva URL HTTPS, sin `/docs` ni
+`/api/v1/persons`. Actualiza también el entorno Postman. La colección crea una
 persona de prueba y la elimina al terminar correctamente.
 
 ## Actualizaciones
