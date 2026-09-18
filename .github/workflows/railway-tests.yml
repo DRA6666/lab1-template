@@ -1,0 +1,35 @@
+name: Railway API tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-api-tests
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: ${{ vars.RAILWAY_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check public URL configuration
+        run: |
+          if [[ "$BASE_URL" != https://* ]]; then
+            echo "Set the repository variable RAILWAY_BASE_URL to the public HTTPS URL."
+            exit 1
+          fi
+      - name: Install Newman
+        run: npm install --global newman@6.2.1
+      - name: Test deployed API
+        run: >-
+          newman run "postman/[inst] Lab1.postman_collection.json"
+          --env-var "baseUrl=${BASE_URL%/}" --delay-request 100

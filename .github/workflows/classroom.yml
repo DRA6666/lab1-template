@@ -1,40 +1,73 @@
-name: GitHub Classroom Workflow
+name: Person API CI
+
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: person-api-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
-    name: Autograding
+  test-build-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      COMPOSE_PROJECT_NAME: person-ci
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
-
-      # TODO build, test and deploy project
-
-      - name: Run API Tests
-        uses: matt-ball/newman-action@master
+          python-version: '3.14'
+          cache: pip
+      - uses: actions/setup-node@v4
         with:
-          collection: postman/[inst] Lab1.postman_collection.json
-          environment: postman/[inst][heroku] Lab1.postman_environment.json
-          delayRequest: 100
-          reporters: '[ "cli" ]'
-
-      - name: Autograding
-        uses: education/autograding@v1
-        continue-on-error: true
-
-      - name: Github auto grader mark
-        uses: Romanow/google-sheet-autograder-marker@v1.0
-        with:
-          google_token: ${{secrets.GOOGLE_API_KEY}}
-          sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
-          homework_number: 1
-          user_column: 'D'
-          column_offset: 'F'
-          mark: "'+"
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          npm install --global newman@6.2.1
+      - name: Unit tests
+        run: python -m pytest -v
+      - name: Build Docker image and start API with PostgreSQL
+        run: docker compose up -d --build --wait --wait-timeout 120
+      - name: Wait for API
+        run: >-
+          curl --fail --silent --show-error --output /dev/null
+          --retry 20 --retry-delay 3 --retry-all-errors --max-time 5
+          http://localhost:8080/api/v1/persons
+      - name: Postman integration tests
+        run: >-
+          newman run "postman/[inst] Lab1.postman_collection.json"
+          -e "postman/[inst][local] Lab1.postman_environment.json"
+          --delay-request 100
+      - name: Publish tested image to GitHub Container Registry
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_USER: ${{ github.actor }}
+          GH_REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          IMAGE="ghcr.io/${GH_REPOSITORY,,}"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
+          docker tag person-ci-api "$IMAGE:$COMMIT_SHA"
+          docker tag person-ci-api "$IMAGE:latest"
+          docker push "$IMAGE:$COMMIT_SHA"
+          docker push "$IMAGE:latest"
+          echo "Published tested image: $IMAGE:$COMMIT_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=100
+      - name: Stop CI containers
+        if: always()
+        run: docker compose down --volumes
