@@ -1,5 +1,15 @@
-version: "3"
 services:
+  api:
+    build: .
+    restart: on-failure
+    environment:
+      DATABASE_URL: postgresql+psycopg://program:test@postgres:5432/persons
+      PORT: "8080"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
   postgres:
     image: library/postgres:13
     container_name: postgres
@@ -13,6 +23,11 @@ services:
       - ./postgres/:/docker-entrypoint-initdb.d/
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U program -d persons"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   db-data:
