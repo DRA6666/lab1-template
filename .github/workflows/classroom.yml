@@ -70,6 +70,7 @@ jobs:
         run: docker compose logs --no-color --tail=100
       - name: Stop CI containers
         if: always()
+        continue-on-error: true
         run: docker compose down --volumes || true
 
           --timeout-request 30000
