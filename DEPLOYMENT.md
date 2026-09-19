@@ -96,25 +96,24 @@ Referencias:
 - https://docs.railway.com/services
 - https://docs.railway.com/variables/reference
 
-## Northflank (alternativa gratuita)
+## Render + Neon (alternativa gratuita)
 
 Railway queda como despliegue manual porque su API devolvio HTTP 403 incluso
-con un Project Token. Para evitar pagos, usa Northflank Developer Sandbox y
-confirma esta sustitucion con el profesor, ya que el enunciado original menciona
-Heroku.
+con un Project Token. Para evitar pagos, usa un Web Service Free de Render y
+PostgreSQL Free de Neon. Confirma esta sustitucion con el profesor, ya que el
+enunciado original menciona Heroku.
 
-1. Crea un proyecto **Developer Sandbox** en Northflank.
-2. Anade un servicio PostgreSQL y espera a que este disponible.
-3. Anade un servicio desde el repositorio GitHub `DRA6666/lab1-template`.
-   Northflank detectara el `Dockerfile` y construira la imagen.
-4. En las variables del servicio API configura `PORT=8080` y asigna
-   `DATABASE_URL` al valor de conexion que Northflank muestra para PostgreSQL.
+1. Crea un proyecto PostgreSQL en Neon y copia su cadena `DATABASE_URL`.
+2. Crea un Web Service **Free** en Render desde `DRA6666/lab1-template`.
+3. Selecciona Docker y la rama `master`; Render detectara el `Dockerfile`.
+4. En las variables del servicio configura `PORT=8080` y asigna
+   `DATABASE_URL` al valor de conexion que Neon muestra.
    No guardes esa URL en GitHub porque contiene la contrasena.
-5. Expone el puerto 8080 y genera un dominio HTTPS. Comprueba `/docs` y
+5. Configura el puerto 8080 y genera un dominio HTTPS. Comprueba `/docs` y
    `/api/v1/persons`.
 6. En GitHub, Settings > Secrets and variables > Actions > Variables, anade
-   `NORTHFLANK_BASE_URL` con ese dominio, sin `/docs` ni una ruta API.
-7. Ejecuta **Actions > Northflank API tests > Run workflow**. Newman creara y
+   `RENDER_BASE_URL` con ese dominio, sin `/docs` ni una ruta API.
+7. Ejecuta **Actions > Render API tests > Run workflow**. Newman creara y
    eliminara un registro temporal usando las cinco operaciones.
 
 El workflow `Person API CI` ya no intenta desplegar en Railway: ejecuta las 14

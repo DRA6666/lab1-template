@@ -1,4 +1,4 @@
-name: Northflank API tests
+name: Render API tests
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      BASE_URL: ${{ vars.NORTHFLANK_BASE_URL }}
+      BASE_URL: ${{ vars.RENDER_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,7 +20,7 @@ jobs:
       - name: Check public URL configuration
         run: |
           if [[ "$BASE_URL" != https://* ]]; then
-            echo "Set the repository variable NORTHFLANK_BASE_URL to the public HTTPS URL."
+            echo "Set the repository variable RENDER_BASE_URL to the public HTTPS URL."
             exit 1
           fi
       - name: Install Newman
