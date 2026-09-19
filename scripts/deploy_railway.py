@@ -21,7 +21,14 @@ def graphql(token, query, variables=None):
     request = Request(
         ENDPOINT,
         data=json.dumps({"query": query, "variables": variables or {}}).encode(),
-        headers={"Content-Type": "application/json", "Project-Access-Token": token},
+        # Railway project tokens use Project-Access-Token; account/workspace
+        # tokens use Authorization. Sending both keeps CI compatible with either
+        # token scope without ever printing the token.
+        headers={
+            "Content-Type": "application/json",
+            "Project-Access-Token": token,
+            "Authorization": f"Bearer {token}",
+        },
     )
     try:
         with urlopen(request, timeout=30) as response:
