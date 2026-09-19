@@ -67,15 +67,29 @@ persona de prueba y la elimina al terminar correctamente.
 
 ## Actualizaciones
 
-Después de cada cambio en master, espera a que CI publique la imagen probada.
-Para actualizar Railway, cambia la imagen del servicio api a
-`ghcr.io/dra6666/lab1-template:SHA_COMPLETO_DEL_COMMIT` y despliega. Usar una
-etiqueta de commit permite identificar exactamente qué versión está ejecutándose.
+El workflow `Person API CI` despliega automáticamente después de publicar la
+imagen probada. Usa `ghcr.io/dra6666/lab1-template:SHA_COMPLETO_DEL_COMMIT`,
+configura el healthcheck `/api/v1/persons` y espera a que Railway confirme el
+estado SUCCESS del nuevo despliegue. Después comprueba la URL pública y ejecuta
+Postman contra Railway. No construye en Railway ni usa Heroku CLI o webhooks.
 
-El despliegue y la prueba remota siguen siendo manuales hasta configurar la
-automatización autenticada de Railway. El pipeline local de CI funciona sin
-tokens de Railway. Mantén Trial/Free según el presupuesto elegido; los créditos
-gratuitos son limitados y no garantizan disponibilidad permanente.
+Configuración inicial en GitHub, Settings > Secrets and variables > Actions:
+
+- Secret `RAILWAY_TOKEN`: token de proyecto Railway para el entorno production,
+  creado en Settings > Tokens del proyecto. No uses un token de cuenta.
+- Variable opcional `RAILWAY_BASE_URL`: URL HTTPS si cambia el dominio actual.
+
+El entorno se obtiene del token de proyecto y el servicio API se identifica por
+el dominio público configurado; no necesitas guardar un ID de servicio. Los pull requests solo ejecutan CI;
+el despliegue está limitado a master y nunca cancela otro despliegue en curso.
+Si falta configuración o Railway rechaza el despliegue, el job falla explícitamente.
+No se informa de éxito basándose únicamente en que responda una versión anterior.
+
+Para volver a ejecutar el flujo completo, usa Actions > Person API CI > Run
+workflow en master. `Railway API tests` sigue disponible para comprobar solo la API.
+Si falla la versión nueva, revisa los logs en Railway; no se hace rollback
+automático. Mantén Trial/Free según el presupuesto elegido; los créditos gratuitos
+son limitados y no garantizan disponibilidad permanente.
 
 Referencias:
 - https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry

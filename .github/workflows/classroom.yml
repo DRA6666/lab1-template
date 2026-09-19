@@ -71,3 +71,39 @@ jobs:
       - name: Stop CI containers
         if: always()
         run: docker compose down --volumes
+
+  deploy-railway:
+    needs: test-build-publish
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: railway-api-tests
+      cancel-in-progress: false
+    env:
+      BASE_URL: ${{ vars.RAILWAY_BASE_URL || 'https://lab1-template-production-893a.up.railway.app' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Newman before deploying
+        run: npm install --global newman@6.2.1
+      - name: Deploy tested commit image and wait for Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_BASE_URL: ${{ vars.RAILWAY_BASE_URL || 'https://lab1-template-production-893a.up.railway.app' }}
+        run: python scripts/deploy_railway.py
+      - name: Wait for public API
+        run: >-
+          curl --fail --silent --show-error --output /dev/null
+          --retry 20 --retry-delay 3 --retry-all-errors --max-time 10
+          "${BASE_URL%/}/api/v1/persons"
+      - name: Postman tests against deployed API
+        run: >-
+          newman run "postman/[inst] Lab1.postman_collection.json"
+          --env-var "baseUrl=${BASE_URL%/}" --delay-request 100
+          --timeout-request 30000
