@@ -31,8 +31,15 @@ def graphql(token, query, variables=None):
     except URLError:
         raise RailwayError("Could not connect to Railway; deployment was not confirmed.") from None
     if payload.get("errors"):
-        # Do not print server messages which may include request data or secrets.
-        raise RailwayError("Railway rejected the GraphQL operation; check token, service and environment.")
+        # Railway errors contain no credentials; expose only a compact diagnostic
+        # so a failed GitHub job can be fixed without downloading private logs.
+        error = payload["errors"][0]
+        extensions = error.get("extensions") or {}
+        code = str(extensions.get("code", "UNKNOWN"))
+        message = str(error.get("message", "request rejected"))
+        if re.search(r"token|password|secret|sensitive", message, flags=re.IGNORECASE):
+            message = "request rejected"
+        raise RailwayError(f"Railway GraphQL {code}: {message[:240]}")
     if not isinstance(payload.get("data"), dict):
         raise RailwayError("Railway returned an invalid response.")
     return payload["data"]
@@ -143,5 +150,6 @@ if __name__ == "__main__":
     try:
         deploy()
     except (RailwayError, KeyError, ValueError, TimeoutError) as error:
+        print(f"::error title=Railway deployment::{error}", flush=True)
         print(f"Deployment stopped: {error}", file=sys.stderr)
         sys.exit(1)

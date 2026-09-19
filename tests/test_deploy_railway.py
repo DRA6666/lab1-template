@@ -103,3 +103,4 @@ def test_graphql_errors_fail_even_with_http_200(monkeypatch):
     with pytest.raises(RailwayError) as error:
         graphql("test-token", "query { projectToken { projectId } }")
     assert "sensitive data" not in str(error.value)
+    assert "request rejected" in str(error.value)
